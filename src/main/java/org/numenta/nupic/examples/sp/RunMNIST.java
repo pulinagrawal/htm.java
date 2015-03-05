@@ -65,6 +65,7 @@ public class RunMNIST {
             columnNumber *= x;
         }
         activeArray = new int[columnNumber];
+        inputArray = new int[inputSize];
         
         parameters = Parameters.getSpatialDefaultParameters();
         parameters.setParameterByKey(KEY.INPUT_DIMENSIONS, inputDimensions);
@@ -81,6 +82,36 @@ public class RunMNIST {
         sp.init(mem);
     }
     
+    /**
+     * Set the current image from the MNIST reader as the inputArray
+     * @throws IOException 
+     */
+    public void setInputArray(MnistManager manager) throws IOException {
+    	int[][] image=manager.readImage();
+    	System.out.println("input array size:"+inputArray.length);
+    	System.out.println("image size"+image.length);
+    	System.out.println("image[0] size"+image[0].length);
+    	graytoBW(image);
+    	for (int i = 0; i < image.length; i++) {
+			for (int j = 0; j < image[0].length; j++) {
+				inputArray[i*image[0].length+j]=image[i][j];
+			}
+		}
+    }
+    /**
+     * converts a grayscale image to black and white 
+     * 		current conversion method if grayscale value is more than half
+     * 			then black
+     * 			else white
+     * @param grayImage
+     */
+    private void graytoBW(int[][] grayImage) {
+    	for (int i = 0; i < grayImage.length; i++) {
+			for (int j = 0; j < grayImage[0].length; j++) {
+				grayImage[i][j]=grayImage[i][j]>127?0:1;
+			}
+		}
+    }
     /**
      * Create a random input vector
      */
@@ -132,25 +163,17 @@ public class RunMNIST {
     }
     
     public static void main(String args[]) throws IOException {
-        RunMNIST example = new RunMNIST(new int[]{32, 32}, new int[]{64, 64});
-        
 //        MnistManager mnist=new MnistManager(args[0], args[1]);
         MnistManager mnist=new MnistManager("train-images.idx3-ubyte", "train-labels.idx1-ubyte");
-        
-        int[][] image=mnist.readImage();
-        for (int i = 0; i < image.length; i++) {
-			for (int j = 0; j < image[0].length; j++) {
-				System.out.print(image[i][j]);
-			}
-			System.out.println();
-		}
-        
+       
+         RunMNIST example = new RunMNIST(new int[]{mnist.readImage().length, mnist.readImage()[0].length}, new int[]{64, 64});
+      
         MNISTViewer mnistViewer=new MNISTViewer(mnist);
         
-        /*
         //Trying random vectors
         for (int i = 0; i < 3; i++) {
-            example.createInput();
+            mnist.setCurrent(i+1);
+            example.setInputArray(mnist);
             example.run();
         }
         
@@ -189,6 +212,5 @@ public class RunMNIST {
         for (int i = 0; i < 75; i++) System.out.print("-");
         example.addNoise(0.2);
         example.run();
-        */
     }
 }
