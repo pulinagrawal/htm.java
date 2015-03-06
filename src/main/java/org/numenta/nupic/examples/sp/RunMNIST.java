@@ -88,9 +88,6 @@ public class RunMNIST {
      */
     public void setInputArray(MnistManager manager) throws IOException {
     	int[][] image=manager.readImage();
-    	System.out.println("input array size:"+inputArray.length);
-    	System.out.println("image size"+image.length);
-    	System.out.println("image[0] size"+image[0].length);
     	graytoBW(image);
     	for (int i = 0; i < image.length; i++) {
 			for (int j = 0; j < image[0].length; j++) {
