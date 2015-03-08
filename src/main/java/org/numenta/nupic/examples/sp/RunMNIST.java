@@ -129,8 +129,9 @@ public class RunMNIST {
     
     /**
      * Run the spatial pooler with the input vector
+     * @return int[] array of indices of all the active columns
      */
-    public void run() {
+    public int[] run() {
         for (int i = 0; i < 80; i++) System.out.print("-");
         System.out.print("Computing the SDR");
         for (int i = 0; i < 70; i++) System.out.print("-");
@@ -144,6 +145,7 @@ public class RunMNIST {
             }
         });
         System.out.println(Arrays.toString(res));
+        return res;
     }
 
     /**
@@ -167,8 +169,8 @@ public class RunMNIST {
       
         MNISTViewer mnistViewer=new MNISTViewer(mnist);
         
-        //Trying random vectors
-        for (int i = 0; i < 3; i++) {
+        //run for given number of images from MNIST
+        for (int i = 0; i < 30; i++) {
             mnist.setCurrent(i+1);
             example.setInputArray(mnist);
             example.run();
