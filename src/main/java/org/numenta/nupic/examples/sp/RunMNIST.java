@@ -24,10 +24,20 @@ package org.numenta.nupic.examples.sp;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Random;
 
 import mnist.MNISTViewer;
 import mnist.MnistManager;
+import net.sf.javaml.clustering.KMeans;
+import net.sf.javaml.core.Dataset;
+import net.sf.javaml.core.DefaultDataset;
+import net.sf.javaml.core.DenseInstance;
+import net.sf.javaml.core.Instance;
+import net.sf.javaml.core.SparseInstance;
+import net.sf.javaml.distance.DistanceMeasure;
+import net.sf.javaml.distance.EuclideanDistance;
+import net.sf.javaml.distance.ManhattanDistance;
 
 import org.numenta.nupic.Connections;
 import org.numenta.nupic.Parameters;
@@ -71,10 +81,14 @@ public class RunMNIST {
         parameters.setParameterByKey(KEY.INPUT_DIMENSIONS, inputDimensions);
         parameters.setParameterByKey(KEY.COLUMN_DIMENSIONS, columnDimensions);
         parameters.setParameterByKey(KEY.POTENTIAL_RADIUS, inputSize);
+        parameters.setParameterByKey(KEY.POTENTIAL_PCT, .9);
         parameters.setParameterByKey(KEY.GLOBAL_INHIBITIONS, true);
-        parameters.setParameterByKey(KEY.NUM_ACTIVE_COLUMNS_PER_INH_AREA, 0.02*columnNumber);
-        parameters.setParameterByKey(KEY.SYN_PERM_ACTIVE_INC, 0.01);
+        parameters.setParameterByKey(KEY.NUM_ACTIVE_COLUMNS_PER_INH_AREA, 240.0);
+        parameters.setParameterByKey(KEY.SYN_PERM_ACTIVE_INC, 0.00);
+        parameters.setParameterByKey(KEY.SYN_PERM_INACTIVE_DEC, 0.00);
+        parameters.setParameterByKey(KEY.SYN_PERM_CONNECTED, 0.2);
         parameters.setParameterByKey(KEY.SYN_PERM_TRIM_THRESHOLD, 0.005);
+        parameters.setParameterByKey(KEY.MAX_BOOST, 1.0);
 
         sp = new SpatialPooler();
         mem = new Connections();
@@ -145,7 +159,7 @@ public class RunMNIST {
             }
         });
         System.out.println(Arrays.toString(res));
-        return res;
+        return activeArray;
     }
 
     /**
@@ -161,55 +175,129 @@ public class RunMNIST {
         }
     }
     
+    /**
+     * Cacluates the centroid of the dataset
+     * @param dataset
+     * @return
+     */
+    public static double[] centroid(Dataset dataset,boolean isRealSpace){
+    	double[] centroid=new double[dataset.get(1).values().size()];
+    	for (int i = 0; i < centroid.length; i++) {
+    		double dimCentroid=0;
+    		for (Iterator iterator = dataset.iterator(); iterator.hasNext();) {
+    			Instance instance = (Instance) iterator.next();
+    			dimCentroid+=instance.value(i);
+    		}	
+    		centroid[i]=dimCentroid/dataset.size();
+    		if(!isRealSpace)
+    			centroid[i]=centroid[i]<Math.floor(centroid[i])+.5?Math.floor(centroid[i]):Math.ceil(centroid[i]);
+		}
+    	return centroid;
+    }
+
+    /**
+     * Calculates the mean distance of all the points in the dataset from the centroid
+     * @param centroid
+     * @param dataset
+     * @return
+     */
+    public static double meanDistance(double[] centroid, Dataset dataset,DistanceMeasure dm){
+    	double mean=0;
+    	for (Iterator iterator = dataset.iterator(); iterator.hasNext();) {
+			Instance instance = (Instance) iterator.next();
+			mean+=dm.measure(instance, new DenseInstance(centroid));
+		}
+    	return mean/dataset.size();
+    }
+    
+    /**
+     * Calculates the variance of distance of all the points in the dataset from the centroid
+     * @param centroid
+     * @param dataset
+     * @return
+     */
+    public static double variance(double[] centroid, Dataset dataset,DistanceMeasure dm){
+    	double mean=meanDistance(centroid, dataset, dm);
+    	double variance=0;
+    	for (Iterator iterator = dataset.iterator(); iterator.hasNext();) {
+			Instance instance = (Instance) iterator.next();
+			variance+=Math.pow(mean-dm.measure(instance, new DenseInstance(centroid)),2);
+		}
+    	return variance/dataset.size();
+    }
+    
+    /**
+     * 
+     * @param args
+     * @throws IOException
+     */
     public static void main(String args[]) throws IOException {
 //        MnistManager mnist=new MnistManager(args[0], args[1]);
         MnistManager mnist=new MnistManager("train-images.idx3-ubyte", "train-labels.idx1-ubyte");
-       
-         RunMNIST example = new RunMNIST(new int[]{mnist.readImage().length, mnist.readImage()[0].length}, new int[]{64, 64});
-      
-        MNISTViewer mnistViewer=new MNISTViewer(mnist);
-        
+        RunMNIST example = new RunMNIST(new int[]{mnist.readImage().length, mnist.readImage()[0].length}, new int[]{64, 64});
+//        MNISTViewer mnistViewer=new MNISTViewer(mnist);
+
+
+        DefaultDataset dataset=new DefaultDataset();
+        DefaultDataset realCluster[]=new DefaultDataset[10];
+        for (int i = 0; i < realCluster.length; i++) {
+        	realCluster[i]=new DefaultDataset();
+		}
         //run for given number of images from MNIST
-        for (int i = 0; i < 30; i++) {
-            mnist.setCurrent(i+1);
+        int j=0;
+        for (j = 0; j < mnist.getImages().getCount(); j++) {
+            mnist.setCurrent(j+1);
             example.setInputArray(mnist);
-            example.run();
+            int output[]=example.run();
+            dataset.add(new DenseInstance(ArrayUtils.toDoubleArray(output),mnist.readLabel()));
+            realCluster[mnist.readLabel()].add(new DenseInstance(ArrayUtils.toDoubleArray(output),mnist.readLabel()));
         }
+        for (int i = 0; i < realCluster.length; i++) {
+			System.out.println("Real Cluster "+i);
+			System.out.println("Mean Distance "+meanDistance(centroid(realCluster[i], false), dataset, new EuclideanDistance()));
+			System.out.println("Variance "+variance(centroid(realCluster[i], false), dataset, new EuclideanDistance()));
+			System.out.println();
+		}
+        System.out.println("Clustering");
+        Dataset[] tenCluster=(new KMeans(10,1,new ManhattanDistance())).cluster(dataset);
+        System.out.println("clustered");
+        for (int i = 0; i < tenCluster.length; i++) {
+        	int instances[]=new int[10];
+        	for (Iterator iterator = tenCluster[i].iterator(); iterator.hasNext();) {
+				Instance instance = (Instance) iterator.next();
+				instances[(int)instance.classValue()]++;
+			}
+        	System.out.println("Cluster "+i);
+        	for (int k = 0; k < instances.length; k++) {
+        		System.out.println("Instances of "+k+ ":" +instances[k]);
+        	}
+        	System.out.println();
+		}
+
+        mnist.setCurrent(j++ + 1);
+        example.setInputArray(mnist);
+        int l1=mnist.readLabel();
+        int f1[]=example.run();
+        mnist.setCurrent(j++ + 1);
+        example.setInputArray(mnist);
+        int l2=mnist.readLabel();
+        int f2[]=example.run();
         
-        //Lesson 2
-        System.out.println("\n\nIdentical SDRs because we give identical inputs");
-        System.out.println("Lesson - identical inputs give identical SDRs\n\n");
+        System.out.println("L1="+l1);
+        System.out.println("Columns active="+ArrayUtils.where(f1, new Condition.Adapter<Object>() {
+            public boolean eval(int n) {
+                return n > 0;
+            }
+        }).length);
+        System.out.println("L2="+l2);
+        System.out.println("Columns active="+ArrayUtils.where(f2, new Condition.Adapter<Object>() {
+            public boolean eval(int n) {
+                return n > 0;
+            }
+        }).length);
+        System.out.println("%Diff="+(double)ArrayUtils.sum(ArrayUtils.and(f1, f2))/f1.length);
 
-        for (int i = 0; i < 75; i++) System.out.print("-");
-        System.out.print("Using identical input vectors");
-        for (int i = 0; i < 75; i++) System.out.print("-");
-        System.out.println();
-    
-        //Trying identical vectors
-        for (int i = 0; i < 2; i++) {
-          example.run();
-        }
         
-        // Lesson 3
-        System.out.println("\n\nNow we are changing the input vector slightly.");
-        System.out.println("We change a small percentage of 1s to 0s and 0s to 1s.");
-        System.out.println("The resulting SDRs are similar, but not identical to the original SDR");
-        System.out.println("Lesson - Similar input vectors give similar SDRs\n\n");
-
-        // Adding 10% noise to the input vector
-        // Notice how the output SDR hardly changes at all
-        for (int i = 0; i < 75; i++) System.out.print("-");
-        System.out.print("After adding 10% noise to the input vector");
-        for (int i = 0; i < 75; i++) System.out.print("-");
-        example.addNoise(0.1);
-        example.run();
-
-        // Adding another 20% noise to the already modified input vector
-        // The output SDR should differ considerably from that of the previous output
-        for (int i = 0; i < 75; i++) System.out.print("-");
-        System.out.print("After adding another 20% noise to the input vector");
-        for (int i = 0; i < 75; i++) System.out.print("-");
-        example.addNoise(0.2);
-        example.run();
+        
     }
 }
