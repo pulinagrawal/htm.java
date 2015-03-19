@@ -246,7 +246,7 @@ public class RunMNIST {
 		}
         //run for given number of images from MNIST
         int j=0;
-        for (j = 0; j < mnist.getImages().getCount(); j++) {
+        for (j = 0; j < Integer.parseInt(args[0]); j++) {
             mnist.setCurrent(j+1);
             example.setInputArray(mnist);
             int output[]=example.run();
