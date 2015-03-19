@@ -968,7 +968,6 @@ public class SpatialPooler {
 	    	boostInterim = ArrayUtils.multiply(boostInterim, activeDutyCycles, 0, 0);
 	    	boostInterim = ArrayUtils.d_add(boostInterim, c.getMaxBoost());
 	    }
-    	System.out.println("$$$$$$$$$$$$$$$$$$$$$$$$$");
     	ArrayUtils.setIndexesTo(boostInterim, ArrayUtils.where(activeDutyCycles, new Condition.Adapter<Object>() {
     		int i = 0;
     		@Override public boolean eval(double d) { return d > minActiveDutyCycles[i++]; }

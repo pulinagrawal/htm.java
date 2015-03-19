@@ -146,10 +146,10 @@ public class RunMNIST {
      * @return int[] array of indices of all the active columns
      */
     public int[] run() {
-        for (int i = 0; i < 80; i++) System.out.print("-");
-        System.out.print("Computing the SDR");
-        for (int i = 0; i < 70; i++) System.out.print("-");
-        System.out.println();
+        //for (int i = 0; i < 80; i++) System.out.print("-");
+        //System.out.print("Computing the SDR");
+        //for (int i = 0; i < 70; i++) System.out.print("-");
+        //System.out.println();
         
         sp.compute(mem, inputArray, activeArray, true, true);
         
@@ -158,7 +158,7 @@ public class RunMNIST {
                 return n > 0;
             }
         });
-        System.out.println(Arrays.toString(res));
+        //System.out.println(Arrays.toString(res));
         return activeArray;
     }
 
@@ -233,8 +233,9 @@ public class RunMNIST {
      */
     public static void main(String args[]) throws IOException {
 //        MnistManager mnist=new MnistManager(args[0], args[1]);
+    	int columns=32*32;
         MnistManager mnist=new MnistManager("train-images.idx3-ubyte", "train-labels.idx1-ubyte");
-        RunMNIST example = new RunMNIST(new int[]{mnist.readImage().length, mnist.readImage()[0].length}, new int[]{64, 64});
+        RunMNIST example = new RunMNIST(new int[]{mnist.readImage().length, mnist.readImage()[0].length}, new int[]{ (int) Math.sqrt(columns),(int) Math.sqrt(columns)});
 //        MNISTViewer mnistViewer=new MNISTViewer(mnist);
 
 
@@ -251,13 +252,25 @@ public class RunMNIST {
             int output[]=example.run();
             dataset.add(new DenseInstance(ArrayUtils.toDoubleArray(output),mnist.readLabel()));
             realCluster[mnist.readLabel()].add(new DenseInstance(ArrayUtils.toDoubleArray(output),mnist.readLabel()));
+            System.out.println( "Clustered "+ j);
         }
+        double[][] centroids=new double[10][columns];
         for (int i = 0; i < realCluster.length; i++) {
+        	centroids[i]=centroid(realCluster[i], false);
 			System.out.println("Real Cluster "+i);
-			System.out.println("Mean Distance "+meanDistance(centroid(realCluster[i], false), dataset, new EuclideanDistance()));
-			System.out.println("Variance "+variance(centroid(realCluster[i], false), dataset, new EuclideanDistance()));
+			System.out.println("Mean Distance "+meanDistance(centroids[i], dataset, new EuclideanDistance()));
+			System.out.println("Variance "+variance(centroids[i], dataset, new EuclideanDistance()));
 			System.out.println();
 		}
+
+        System.out.println("Real Cluster Mutual Distances");
+        for (int i = 0; i < centroids.length; i++) {
+			for (int k = 0; k < centroids.length; k++) {
+				System.out.print(new EuclideanDistance().calculateDistance(new DenseInstance(centroids[i]),new DenseInstance(centroids[k]))+",");
+			}
+			System.out.println();
+		}
+        
         System.out.println("Clustering");
         Dataset[] tenCluster=(new KMeans(10,1,new ManhattanDistance())).cluster(dataset);
         System.out.println("clustered");
@@ -273,7 +286,7 @@ public class RunMNIST {
         	}
         	System.out.println();
 		}
-
+        
         mnist.setCurrent(j++ + 1);
         example.setInputArray(mnist);
         int l1=mnist.readLabel();
