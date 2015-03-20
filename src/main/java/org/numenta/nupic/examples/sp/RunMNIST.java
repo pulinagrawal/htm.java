@@ -233,7 +233,7 @@ public class RunMNIST {
      */
     public static void main(String args[]) throws IOException {
 //        MnistManager mnist=new MnistManager(args[0], args[1]);
-    	int columns=32*32;
+    	int columns=(int) Math.pow(Integer.parseInt(args[1]), 2);
         MnistManager mnist=new MnistManager("train-images.idx3-ubyte", "train-labels.idx1-ubyte");
         RunMNIST example = new RunMNIST(new int[]{mnist.readImage().length, mnist.readImage()[0].length}, new int[]{ (int) Math.sqrt(columns),(int) Math.sqrt(columns)});
 //        MNISTViewer mnistViewer=new MNISTViewer(mnist);
