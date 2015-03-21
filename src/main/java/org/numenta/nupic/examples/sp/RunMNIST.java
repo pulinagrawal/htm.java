@@ -270,7 +270,7 @@ public class RunMNIST {
 			}
 			System.out.println();
 		}
-        
+        /* 
         System.out.println("Clustering");
         Dataset[] tenCluster=(new KMeans(10,1,new ManhattanDistance())).cluster(dataset);
         System.out.println("clustered");
@@ -310,7 +310,7 @@ public class RunMNIST {
         }).length);
         System.out.println("%Diff="+(double)ArrayUtils.sum(ArrayUtils.and(f1, f2))/f1.length);
 
-        
+      */  
         
     }
 }
