@@ -45,6 +45,7 @@ import org.numenta.nupic.Parameters.KEY;
 import org.numenta.nupic.research.SpatialPooler;
 import org.numenta.nupic.util.ArrayUtils;
 import org.numenta.nupic.util.Condition;
+import org.numenta.nupic.util.HammingDistance;
 
 /**
  * A simple program that demonstrates the working of the spatial pooler
@@ -258,15 +259,15 @@ public class RunMNIST {
         for (int i = 0; i < realCluster.length; i++) {
         	centroids[i]=centroid(realCluster[i], false);
 			System.out.println("Real Cluster "+i);
-			System.out.println("Mean Distance "+meanDistance(centroids[i], dataset, new EuclideanDistance()));
-			System.out.println("Variance "+variance(centroids[i], dataset, new EuclideanDistance()));
+			System.out.println("Mean Distance "+meanDistance(centroids[i], dataset, new HammingDistance()));
+			System.out.println("Variance "+variance(centroids[i], dataset, new HammingDistance()));
 			System.out.println();
 		}
 
         System.out.println("Real Cluster Mutual Distances");
         for (int i = 0; i < centroids.length; i++) {
 			for (int k = 0; k < centroids.length; k++) {
-				System.out.print(new EuclideanDistance().calculateDistance(new DenseInstance(centroids[i]),new DenseInstance(centroids[k]))+",");
+				System.out.print((int)new HammingDistance().measure(new DenseInstance(centroids[i]),new DenseInstance(centroids[k]))+"\t");
 			}
 			System.out.println();
 		}
