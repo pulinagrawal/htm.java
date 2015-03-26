@@ -179,17 +179,22 @@ public class RunMNIST {
     /**
      * Cacluates the centroid of the dataset
      * @param dataset
+     * @param isRealSpace does the instances have vectors in real space
+     * @param pctConsidered percentage of instances considered from the end for centroid. Range [0-1.0]
      * @return
      */
-    public static double[] centroid(Dataset dataset,boolean isRealSpace){
+    public static double[] centroid(Dataset dataset,boolean isRealSpace, double pctConsidered){
     	double[] centroid=new double[dataset.get(1).values().size()];
     	for (int i = 0; i < centroid.length; i++) {
     		double dimCentroid=0;
-    		for (Iterator iterator = dataset.iterator(); iterator.hasNext();) {
-    			Instance instance = (Instance) iterator.next();
-    			dimCentroid+=instance.value(i);
-    		}	
-    		centroid[i]=dimCentroid/dataset.size();
+    		Instance[] allInstances;
+    		allInstances= (Instance[]) dataset.toArray(new Instance[dataset.size()]); 
+    		int instancesConsidered=(int) (pctConsidered*allInstances.length);
+    		for (int j = (int) ((1-pctConsidered)*allInstances.length); j < allInstances.length; j++) {
+    			dimCentroid+=allInstances[j].value(i);
+    		}
+    		centroid[i]=dimCentroid/instancesConsidered;
+    		//System.out.println(dimCentroid+","+instancesConsidered+","+centroid[i]);
     		if(!isRealSpace)
     			centroid[i]=centroid[i]<Math.floor(centroid[i])+.5?Math.floor(centroid[i]):Math.ceil(centroid[i]);
 		}
@@ -235,6 +240,7 @@ public class RunMNIST {
     public static void main(String args[]) throws IOException {
 //        MnistManager mnist=new MnistManager(args[0], args[1]);
     	int columns=(int) Math.pow(Integer.parseInt(args[1]), 2);
+    	int images= Integer.parseInt(args[0]);
         MnistManager mnist=new MnistManager("train-images.idx3-ubyte", "train-labels.idx1-ubyte");
         RunMNIST example = new RunMNIST(new int[]{mnist.readImage().length, mnist.readImage()[0].length}, new int[]{ (int) Math.sqrt(columns),(int) Math.sqrt(columns)});
 //        MNISTViewer mnistViewer=new MNISTViewer(mnist);
@@ -242,13 +248,16 @@ public class RunMNIST {
 
         DefaultDataset dataset=new DefaultDataset();
         DefaultDataset realCluster[]=new DefaultDataset[10];
+        int realClusterPos[]=new int[10];//stores the position of last element added to the realCluster
         for (int i = 0; i < realCluster.length; i++) {
         	realCluster[i]=new DefaultDataset();
+        	realClusterPos[i]=0;
 		}
         //run for given number of images from MNIST
         int j=0;
-        for (j = 0; j < Integer.parseInt(args[0]); j++) {
+        for (j = 0; j < images; j++) {
             mnist.setCurrent(j+1);
+            int label=mnist.readLabel();
             example.setInputArray(mnist);
             int output[]=example.run();
             int[] res = ArrayUtils.where(output, new Condition.Adapter<Object>() {
@@ -257,14 +266,15 @@ public class RunMNIST {
                 }
             });
             System.out.println(res.length+":"+Arrays.toString(res));
-            dataset.add(new DenseInstance(ArrayUtils.toDoubleArray(output),mnist.readLabel()));
-            System.out.println("Adding to real cluster "+mnist.readLabel());
-            realCluster[mnist.readLabel()].add(new DenseInstance(ArrayUtils.toDoubleArray(output),mnist.readLabel()));
+            dataset.add(new DenseInstance(ArrayUtils.toDoubleArray(output),label));
+            System.out.println("Adding to real cluster "+label);
+            realCluster[label].add(realClusterPos[label],new DenseInstance(ArrayUtils.toDoubleArray(output),label));
+            realClusterPos[label]++;
             System.out.println( "Clustered "+ j);
         }
         double[][] centroids=new double[10][columns];
         for (int i = 0; i < realCluster.length; i++) {
-        	centroids[i]=centroid(realCluster[i], false);
+        	centroids[i]=centroid(realCluster[i], false, .1);
 			System.out.println("Real Cluster "+i);
 			System.out.println("Mean Distance "+meanDistance(centroids[i], dataset, new HammingDistance()));
 			System.out.println("Variance "+variance(centroids[i], dataset, new HammingDistance()));
