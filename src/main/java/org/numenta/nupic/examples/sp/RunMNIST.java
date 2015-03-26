@@ -84,7 +84,7 @@ public class RunMNIST {
         parameters.setParameterByKey(KEY.POTENTIAL_RADIUS, inputSize);
         parameters.setParameterByKey(KEY.POTENTIAL_PCT, .9);
         parameters.setParameterByKey(KEY.GLOBAL_INHIBITIONS, true);
-        parameters.setParameterByKey(KEY.NUM_ACTIVE_COLUMNS_PER_INH_AREA, 240.0);
+        parameters.setParameterByKey(KEY.NUM_ACTIVE_COLUMNS_PER_INH_AREA, .02*columnNumber);
         parameters.setParameterByKey(KEY.SYN_PERM_ACTIVE_INC, 0.00);
         parameters.setParameterByKey(KEY.SYN_PERM_INACTIVE_DEC, 0.00);
         parameters.setParameterByKey(KEY.SYN_PERM_CONNECTED, 0.2);
@@ -251,7 +251,14 @@ public class RunMNIST {
             mnist.setCurrent(j+1);
             example.setInputArray(mnist);
             int output[]=example.run();
+            int[] res = ArrayUtils.where(output, new Condition.Adapter<Object>() {
+                public boolean eval(int n) {
+                    return n > 0;
+                }
+            });
+            System.out.println(res.length+":"+Arrays.toString(res));
             dataset.add(new DenseInstance(ArrayUtils.toDoubleArray(output),mnist.readLabel()));
+            System.out.println("Adding to real cluster "+mnist.readLabel());
             realCluster[mnist.readLabel()].add(new DenseInstance(ArrayUtils.toDoubleArray(output),mnist.readLabel()));
             System.out.println( "Clustered "+ j);
         }
@@ -261,6 +268,13 @@ public class RunMNIST {
 			System.out.println("Real Cluster "+i);
 			System.out.println("Mean Distance "+meanDistance(centroids[i], dataset, new HammingDistance()));
 			System.out.println("Variance "+variance(centroids[i], dataset, new HammingDistance()));
+			/*for (Iterator iterator = realCluster[i].iterator(); iterator.hasNext();) {
+				Instance instance = (Instance) iterator.next();
+				System.out.println("Instance :");
+				for (int k = 0; k < instance.values().size(); k++) {
+					System.out.print(instance.value(k)+",");
+				}
+			}*/
 			System.out.println();
 		}
 

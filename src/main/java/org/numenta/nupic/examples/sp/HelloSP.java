@@ -111,7 +111,7 @@ public class HelloSP {
                 return n > 0;
             }
         });
-        System.out.println(Arrays.toString(res));
+        System.out.println(res.length+":"+Arrays.toString(res));
     }
 
     /**
