@@ -314,7 +314,7 @@ public class RunMNIST {
         parameters.setParameterByKey(KEY.POTENTIAL_RADIUS, inputSize);
         parameters.setParameterByKey(KEY.POTENTIAL_PCT, 1.0);
         parameters.setParameterByKey(KEY.GLOBAL_INHIBITIONS, true);
-        parameters.setParameterByKey(KEY.NUM_ACTIVE_COLUMNS_PER_INH_AREA, .02*columns);
+        parameters.setParameterByKey(KEY.NUM_ACTIVE_COLUMNS_PER_INH_AREA, .01*columns);
         parameters.setParameterByKey(KEY.SYN_PERM_ACTIVE_INC, 0.00);
         parameters.setParameterByKey(KEY.SYN_PERM_INACTIVE_DEC, 0.00);
         parameters.setParameterByKey(KEY.SYN_PERM_CONNECTED, 0.7);
@@ -323,6 +323,7 @@ public class RunMNIST {
         parameters.setParameterByKey(KEY.MAX_BOOST, 1.0);
         
         execute(parameters, new File("log"), images, columns, 15);
+        System.out.println("Running Recog");
       /* 
         System.out.println("Clustering");
         Dataset[] tenCluster=(new KMeans(10,1,new ManhattanDistance())).cluster(dataset);
