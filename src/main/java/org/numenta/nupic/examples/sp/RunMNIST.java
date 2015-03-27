@@ -22,6 +22,7 @@
 
 package org.numenta.nupic.examples.sp;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -66,7 +67,7 @@ public class RunMNIST {
      * @param inputDimensions         The size of the input.  {m, n} will give a size of m x n
      * @param columnDimensions        The size of the 2 dimensional array of columns
      */
-    RunMNIST(int[] inputDimensions, int[] columnDimensions) {
+    RunMNIST(int[] inputDimensions, int[] columnDimensions, Parameters params) {
         inputSize = 1;
         columnNumber = 1;
         for (int x : inputDimensions) {
@@ -77,20 +78,11 @@ public class RunMNIST {
         }
         activeArray = new int[columnNumber];
         inputArray = new int[inputSize];
-        
-        parameters = Parameters.getSpatialDefaultParameters();
+      
+        parameters=params;
         parameters.setParameterByKey(KEY.INPUT_DIMENSIONS, inputDimensions);
         parameters.setParameterByKey(KEY.COLUMN_DIMENSIONS, columnDimensions);
-        parameters.setParameterByKey(KEY.POTENTIAL_RADIUS, inputSize);
-        parameters.setParameterByKey(KEY.POTENTIAL_PCT, .9);
-        parameters.setParameterByKey(KEY.GLOBAL_INHIBITIONS, true);
-        parameters.setParameterByKey(KEY.NUM_ACTIVE_COLUMNS_PER_INH_AREA, .02*columnNumber);
-        parameters.setParameterByKey(KEY.SYN_PERM_ACTIVE_INC, 0.00);
-        parameters.setParameterByKey(KEY.SYN_PERM_INACTIVE_DEC, 0.00);
-        parameters.setParameterByKey(KEY.SYN_PERM_CONNECTED, 0.2);
-        parameters.setParameterByKey(KEY.SYN_PERM_TRIM_THRESHOLD, 0.005);
-        parameters.setParameterByKey(KEY.MAX_BOOST, 1.0);
-
+        
         sp = new SpatialPooler();
         mem = new Connections();
         parameters.apply(mem);
@@ -233,16 +225,23 @@ public class RunMNIST {
     }
     
     /**
-     * 
-     * @param args
-     * @throws IOException
+     * This function is used for parameter search. Runs the whole algorithm on given number 
+     * of images and returns the number of real cluster centroid mutual distances that are
+     * at at least acceptableDistance apart.  
+     * @param params
+     * @param loggingFile
+     * @param images
+     * @param columns
+     * @param acceptableDistance
+     * @return
+     * @throws IOException 
      */
-    public static void main(String args[]) throws IOException {
-//        MnistManager mnist=new MnistManager(args[0], args[1]);
-    	int columns=(int) Math.pow(Integer.parseInt(args[1]), 2);
-    	int images= Integer.parseInt(args[0]);
-        MnistManager mnist=new MnistManager("train-images.idx3-ubyte", "train-labels.idx1-ubyte");
-        RunMNIST example = new RunMNIST(new int[]{mnist.readImage().length, mnist.readImage()[0].length}, new int[]{ (int) Math.sqrt(columns),(int) Math.sqrt(columns)});
+    public static int execute(Parameters params, File loggingFile,int images, int columns,  int acceptableDistance) throws IOException
+    {
+    	int distancesGreater=0;
+
+    	MnistManager mnist=new MnistManager("train-images.idx3-ubyte", "train-labels.idx1-ubyte");
+        RunMNIST example = new RunMNIST(new int[]{mnist.readImage().length, mnist.readImage()[0].length}, new int[]{ (int) Math.sqrt(columns),(int) Math.sqrt(columns)}, params);
 //        MNISTViewer mnistViewer=new MNISTViewer(mnist);
 
 
@@ -295,7 +294,35 @@ public class RunMNIST {
 			}
 			System.out.println();
 		}
-        /* 
+   
+		return distancesGreater;
+    }
+    
+    /**
+     * 
+     * @param args
+     * @throws IOException
+     */
+    public static void main(String args[]) throws IOException {
+//        MnistManager mnist=new MnistManager(args[0], args[1]);
+    	int columns=(int) Math.pow(Integer.parseInt(args[1]), 2);
+    	int images= Integer.parseInt(args[0]);
+ 
+    	int inputSize=32*32;
+    	Parameters parameters;
+        parameters = Parameters.getSpatialDefaultParameters();
+        parameters.setParameterByKey(KEY.POTENTIAL_RADIUS, inputSize);
+  //      parameters.setParameterByKey(KEY.POTENTIAL_PCT, .9);
+        parameters.setParameterByKey(KEY.GLOBAL_INHIBITIONS, true);
+        parameters.setParameterByKey(KEY.NUM_ACTIVE_COLUMNS_PER_INH_AREA, .02*columns);
+        parameters.setParameterByKey(KEY.SYN_PERM_ACTIVE_INC, 0.00);
+//        parameters.setParameterByKey(KEY.SYN_PERM_INACTIVE_DEC, 0.00);
+ //       parameters.setParameterByKey(KEY.SYN_PERM_CONNECTED, 0.2);
+        parameters.setParameterByKey(KEY.SYN_PERM_TRIM_THRESHOLD, 0.005);
+ //       parameters.setParameterByKey(KEY.MAX_BOOST, 1.0);
+        
+        execute(parameters, new File("log"), images, columns, 15);
+      /* 
         System.out.println("Clustering");
         Dataset[] tenCluster=(new KMeans(10,1,new ManhattanDistance())).cluster(dataset);
         System.out.println("clustered");
