@@ -308,18 +308,19 @@ public class RunMNIST {
     	int columns=(int) Math.pow(Integer.parseInt(args[1]), 2);
     	int images= Integer.parseInt(args[0]);
  
-    	int inputSize=32*32;
+    	int inputSize=28*28;
     	Parameters parameters;
         parameters = Parameters.getSpatialDefaultParameters();
         parameters.setParameterByKey(KEY.POTENTIAL_RADIUS, inputSize);
-  //      parameters.setParameterByKey(KEY.POTENTIAL_PCT, .9);
+        parameters.setParameterByKey(KEY.POTENTIAL_PCT, 1.0);
         parameters.setParameterByKey(KEY.GLOBAL_INHIBITIONS, true);
         parameters.setParameterByKey(KEY.NUM_ACTIVE_COLUMNS_PER_INH_AREA, .02*columns);
         parameters.setParameterByKey(KEY.SYN_PERM_ACTIVE_INC, 0.00);
-//        parameters.setParameterByKey(KEY.SYN_PERM_INACTIVE_DEC, 0.00);
- //       parameters.setParameterByKey(KEY.SYN_PERM_CONNECTED, 0.2);
-        parameters.setParameterByKey(KEY.SYN_PERM_TRIM_THRESHOLD, 0.005);
- //       parameters.setParameterByKey(KEY.MAX_BOOST, 1.0);
+        parameters.setParameterByKey(KEY.SYN_PERM_INACTIVE_DEC, 0.00);
+        parameters.setParameterByKey(KEY.SYN_PERM_CONNECTED, 0.7);
+//        parameters.setParameterByKey(KEY.SYN_PERM_TRIM_THRESHOLD, 0.005);
+        parameters.setParameterByKey(KEY.STIMULUS_THRESHOLD, 0.0);
+        parameters.setParameterByKey(KEY.MAX_BOOST, 1.0);
         
         execute(parameters, new File("log"), images, columns, 15);
       /* 
